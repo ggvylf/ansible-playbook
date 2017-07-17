@@ -1,0 +1,68 @@
+- name: Deploy nginx 
+  hosts: einsuer 
+  vars: 
+    NGINX_VERSION: 1.10.3
+  tasks:
+    - name: Copy the nginx tar package
+      copy: src=nginx-{{NGINX_VERSION}}.tar.gz dest=/tmp/nginx-{{NGINX_VERSION}}.tar.gz
+
+    - name: Add user
+      user: name=www uid=1000 shell=/sbin/nologin
+
+    - name: Install pcre pcre-devel openssl openssl-devel gcc and zlib
+      yum: name={{item}} state=latest
+      with_items:
+        - pcre
+        - pcre-devel 
+        - openssl 
+        - openssl-devel
+        - zlib 
+        - zlib-devel
+        - gcc
+        - gcc-c++
+        - ncurses-devel
+        - perl
+
+    - name: Untar nginx tar package and configure
+      shell: > 
+        tar xf /tmp/nginx-{{NGINX_VERSION}}.tar.gz -C /tmp/ &&
+        cd /tmp/nginx-{{NGINX_VERSION}} && 
+        ./configure --prefix=/data/nginx-{{NGINX_VERSION}} 
+        --user=www --group=www
+        --with-pcre
+        --with-http_ssl_module
+        --with-http_gzip_static_module 
+        --with-http_stub_status_module
+        --with-http_v2_module
+
+    - name: Make 
+      make: chdir=/tmp/nginx-{{NGINX_VERSION}} target=/tmp/nginx-{{NGINX_VERSION}}
+ 
+    - name: make install nginx
+      shell: cd /tmp/nginx-{{NGINX_VERSION}}/ && make install
+
+    - name: Touch soft link
+      file: src=/data/nginx-{{NGINX_VERSION}} dest=/data/nginx state=link
+
+    - name: Mkdir /data/nginx/conf/vhost /data/wwwlogs
+      file: path={{item.path}} state=directory mode=0755 owner={{item.owner}} group={{item.group}}
+      with_items:
+        - { path: "/data/nginx/conf/vhost", owner: "root", group: "root"}
+        - { path: "/data/wwwlogs", owner: "www", group: "www"} 
+
+    - name: Copy conf.tar.gz
+      copy:
+        src=conf.tar.gz dest=/tmp/conf.tar.gz
+
+    - name: Unzip conf.tar.gz
+      shell: >
+        tar xf /tmp/conf.tar.gz -C /tmp/ &&
+        mv /tmp/nginx.conf /data/nginx/conf/nginx.conf &&
+        mv /tmp/nginx.service /usr/lib/systemd/system/nginx.service &&
+        systemctl daemon-reload
+
+    - name: Enable nginx php-fpm and start
+      service: name={{item}} state=started enabled=yes
+      with_items:
+        - nginx
+        - php-fpm
