@@ -1,0 +1,117 @@
+- name: Deploy php7
+  hosts: yf-test 
+  vars: 
+    PHP_VERSION: 7.1.12
+  tasks:
+    - name: Install pcre pcre-devel openssl openssl-devel gcc and zlib
+      yum: name={{item}} state=latest
+      with_items:
+        - pcre
+        - pcre-devel 
+        - openssl 
+        - openssl-devel
+        - zlib 
+        - zlib-devel
+        - gcc
+        - gcc-c++
+        - ncurses-devel
+        - perl
+
+    - name: Copy php package
+      copy: src=php-7.1.3.tar.gz dest=/tmp/php-7.1.3.tar.gz
+
+    - name: Install php required
+      yum: name={{item}} state=present
+      with_items:
+        - curl-devel
+        - openjpeg
+        - openjpeg-devel 
+        - openjpeg-libs 
+        - libjpeg 
+        - libpng 
+        - freetype 
+        - libjpeg 
+        - libpng-devel 
+        - freetype-devel  
+        - mcrypt 
+        - libmcrypt 
+        - libmcrypt-devel 
+        - libxml2-devel 
+        - openssl-devel 
+        - libcurl-devel 
+        - libjpeg
+        - libpng
+        - freetype
+        - libjpeg-devel
+        - libpng-devel
+        - freetype-devel
+        - libjpeg-turbo-devel 
+        - libmcrypt-devel 
+        - mysql-devel  
+        - icu 
+        - libicu 
+        - libicu-devel 
+        - libevent* 
+        - libmemcached 
+        - libmemcached-devel 
+        - ImageMagick 
+        - ImageMagick-devel 
+        - libxslt-devel
+
+    - name: Untar php package
+      shell: tar xf /tmp/php-7.1.3.tar.gz -C /tmp/
+
+    - name: Configure php
+      shell: > 
+        cd /tmp/php-7.1.3 &&
+        ./configure --prefix=/data/php7.1.3 
+        --with-config-file-path=/data/php7.1.3/etc 
+        --with-mcrypt=/usr/include 
+        --enable-mysqlnd 
+        --with-gd 
+        --with-iconv-dir
+        --with-curl 
+        --with-zlib 
+        --enable-bcmath 
+        --enable-shmop 
+        --enable-sysvsem 
+        --enable-inline-optimization 
+        --enable-mbregex 
+        --enable-fpm 
+        --enable-exif 
+        --enable-intl 
+        --enable-mbstring 
+        --enable-ftp 
+        --enable-gd-native-ttf 
+        --with-openssl 
+        --enable-pcntl 
+        --enable-sockets 
+        --with-xmlrpc 
+        --enable-zip 
+        --enable-soap 
+        --with-gettext 
+        --with-curl 
+        --with-jpeg-dir 
+        --with-freetype-dir 
+        --with-mysqli 
+        --with-xsl 
+        --enable-embedded-mysqli 
+        --with-pdo-mysql 
+        
+
+    - name: Make and make install php
+      make: chdir=/tmp/php-7.1.3 target=install
+
+    - name: Copy imagick.so memcached.so redis.so phalcon.so composer php-fpm.service www.conf php.ini php-fpm.conf
+      copy: src={{item.src}} dest={{item.dest}} owner=root group=root mode={{item.mode}}
+      with_items:
+        - { src: "imagick.so", dest: "/data/php7.1.3/lib/php/extensions/no-debug-non-zts-20160303/imagick.so" ,mode: "0644"}
+        - { src: "memcached.so", dest: "/data/php7.1.3/lib/php/extensions/no-debug-non-zts-20160303/memcached.so" ,mode: "0644"} 
+        - { src: "redis.so", dest: "/data/php7.1.3/lib/php/extensions/no-debug-non-zts-20160303/redis.so" ,mode: "0644"}
+        - { src: "phalcon.so", dest: "/data/php7.1.3/lib/php/extensions/no-debug-non-zts-20160303/phalcon.so" ,mode: "0644"}
+        - { src: "opcache.so", dest: "/data/php7.1.3/lib/php/extensions/no-debug-non-zts-20160303/opcache.so", mode: "0644"}
+        - { src: "composer", dest: "/usr/local/bin/composer" ,mode: "0755"}
+        - { src: "php7-fpm.service", dest: "/usr/lib/systemd/system/php7-fpm.service" ,mode: "0644"}
+        - { src: "www.conf", dest: "/data/php7.1.3/etc/php-fpm.d/www.conf" ,mode: "0644"} 
+        - { src: "php.ini", dest: "/data/php7.1.3/etc/php.ini" ,mode: "0644"}
+        - { src: "php-fpm.conf", dest: "/data/php7.1.3/etc/php-fpm.conf" ,mode: "0644"}
