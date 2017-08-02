@@ -44,10 +44,10 @@
     - name: Touch soft link
       file: src=/data/nginx-{{NGINX_VERSION}} dest=/data/nginx state=link
 
-    - name: Mkdir /data/nginx/conf/vhost /data/wwwlogs
+    - name: Mkdir /data/nginx/conf/conf.d /data/wwwlogs
       file: path={{item.path}} state=directory mode=0755 owner={{item.owner}} group={{item.group}}
       with_items:
-        - { path: "/data/nginx/conf/vhost", owner: "root", group: "root"}
+        - { path: "/data/nginx/conf/conf.d", owner: "root", group: "root"}
         - { path: "/data/wwwlogs", owner: "www", group: "www"} 
 
     - name: Copy conf.tar.gz
